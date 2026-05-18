@@ -21,62 +21,69 @@
 | Клиентская часть | Vanilla JS + Fetch API |
 
 ## 📁 Структура проекта
-├── local/
-│ └── modules/
-│ └── university.fileasync/
-│ ├── lib/
-│ │ ├── Entity/FileTaskTable.php # ORM-сущность задачи
-│ │ └── Service/RabbitMQPublisher.php # Публикация в очередь
-│ ├── tools/
-│ │ └── worker.php # CLI-воркер обработки
-│ └── install/
-│ └── db/mysql/install.sql # SQL-схема таблицы
-├── ajax/
-│ ├── upload.php # Приём файла и публикация задачи
-│ ├── get_tasks.php # AJAX: список задач (HTML)
-│ └── get_status.php # AJAX: статусы задач (JSON)
-├── download.php # Безопасная отдача файлов
-├── composer.json # Зависимости (php-amqplib/php-amqplib)
-├── README.md # Этот файл
-└── .gitignore # Исключения для репозитория
-└── rmq.php # Страница сервиса
+
+### Модуль обработки файлов
+- **local/modules/university.fileasync/lib/Entity/FileTaskTable.php** — ORM-сущность задачи
+- **local/modules/university.fileasync/lib/Service/RabbitMQPublisher.php** — публикация в очередь RabbitMQ
+- **local/modules/university.fileasync/tools/worker.php** — CLI-воркер обработки
+- **local/modules/university.fileasync/install/db/mysql/install.sql** — SQL-схема таблицы
+
+### AJAX-обработчики
+- **local/ajax/upload.php** — приём файла и публикация задачи
+- **local/ajax/get_tasks.php** — получение списка задач (HTML)
+- **local/ajax/get_status.php** — получение статусов задач (JSON)
+
+### Публичная часть
+- **rmq.php** — главная страница сервиса (загрузка + список файлов)
+- **download.php** — безопасная отдача файлов
+
+### Конфигурация
+- **composer.json** — зависимости (php-amqplib/php-amqplib)
+- **README.md** — документация
+- **.gitignore** — исключения для Git
 
 ## Установка и запуск
 
 ### Предварительные требования
 - Установленная и настроенная 1С-Битрикс
-- Запущенный RabbitMQ с вхостом `/university` и пользователем `bitrix_dev`
+- Запущенный RabbitMQ с хостом `/university` и пользователем `bitrix_dev`
 - PHP 8.1+ с расширениями: `mbstring`, `json`, `zip`, `curl`
 ###
 
 1. Установка зависимостей
-```bash
+
+```
 cd /path/to/site/root
+```
+```
 composer install --no-dev
+```
 
-2. Создание таблицы
-Выполните SQL из local/modules/university.fileasync/install/db/mysql/install.sql в вашей БД.
+3. Создание таблицы. Выполните SQL из
 
-3. Настройка подключения к RabbitMQ
-Отредактируйте массив $cfg в файлах:
+```
+local/modules/university.fileasync/install/db/mysql/install.sql
+```
+
+5. Настройка подключения к RabbitMQ. Отредактируйте массив $cfg в файлах:
+```
 local/modules/university.fileasync/lib/Service/RabbitMQPublisher.php
+```
+```
 local/modules/university.fileasync/tools/worker.php
+```
 
-4. Запуск воркера
-```bash
+6. Запуск воркера
+```
 php local/modules/university.fileasync/tools/worker.php
-
-Воркер работает в режиме демона: слушает очередь и обрабатывает задачи по мере поступления.
+```
+- Воркер работает в режиме демона: слушает очередь и обрабатывает задачи по мере поступления. Для остановки нажмите Ctrl + C.
 
 5. Проверка работы
-Откройте rmq.php
-Загрузите файл (изображение, PDF, DOCX, XLSX)
-Файл появится в списке со статусом pending
-Через несколько секунд статус автоматически обновится на done, а рядом отобразятся метаданные:
+- Откройте страницу сервиса rmq.php
+- Загрузите файл (изображение, PDF, DOCX, XLSX)
+- Файл появится в списке со статусом pending
+- Через несколько секунд статус автоматически обновится на done, а рядом отобразятся метаданные
 
 6. Масштабируемость
-Архитектура поддерживает горизонтальное масштабирование. Запуск нескольких воркеров (в разных терминалах или через systemd/Supervisor)
-```bash
-php worker.php  # Воркер #1
-php worker.php  # Воркер #2
-php worker.php  # Воркер #3
+- Архитектура поддерживает горизонтальное масштабирование. Запуск нескольких воркеров (в разных терминалах или через systemd/Supervisor)
